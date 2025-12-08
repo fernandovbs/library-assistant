@@ -32,6 +32,7 @@ def search_books(query: str, limit: int = 5, sort: str = "relevance") -> str:
     Returns:
         A formatted list of books matching the search query
     """
+    print("Tool search_books called")
     limit = min(max(1, limit), 20)  # Clamp between 1 and 20
     
     sort_param = ""
@@ -96,6 +97,7 @@ def search_authors(query: str, limit: int = 5) -> str:
     Returns:
         A formatted list of authors matching the search query with their top works
     """
+    print("Tool search_authors called")
     limit = min(max(1, limit), 20)
     
     url = f"https://openlibrary.org/search/authors.json?q={query}&limit={limit}"
@@ -153,6 +155,7 @@ def browse_subject(subject: str, limit: int = 5, ebooks_only: bool = False) -> s
     Returns:
         A formatted list of popular books in the given subject
     """
+    print("Tool browse_subject called")
     limit = min(max(1, limit), 20)
     
     # Format subject for URL (replace spaces with underscores, lowercase)
@@ -173,7 +176,7 @@ def browse_subject(subject: str, limit: int = 5, ebooks_only: bool = False) -> s
         if not works:
             return f"No books found for subject: '{subject}'. Try subjects like: science_fiction, romance, mystery, fantasy, biography, history, love, adventure"
         
-        result = f"📚 **{subject_name}** - {work_count} total works\n"
+        result = f"**{subject_name}** - {work_count} total works\n"
         result += f"Showing top {len(works)} books:\n\n"
         
         for i, work in enumerate(works, 1):
@@ -182,7 +185,7 @@ def browse_subject(subject: str, limit: int = 5, ebooks_only: bool = False) -> s
             author_names = ", ".join([a.get("name", "Unknown") for a in authors]) if authors else "Unknown Author"
             edition_count = work.get("edition_count", 0)
             key = work.get("key", "")
-            has_fulltext = "✓ Available" if work.get("has_fulltext") else "✗ Not available"
+            has_fulltext = "Available" if work.get("has_fulltext") else "Not available"
             cover_id = work.get("cover_id")
             cover_url = f"https://covers.openlibrary.org/b/id/{cover_id}-M.jpg" if cover_id else "No cover"
             
@@ -228,6 +231,7 @@ def get_author_works(author_id: str, limit: int = 10) -> str:
     Returns:
         A formatted list of works by the author
     """
+    print("Tool get_author_works called")
     limit = min(max(1, limit), 50)
     
     # Clean up author_id if full path is provided
@@ -288,6 +292,7 @@ def recommend_books(interest: str, limit: int = 5) -> str:
     Returns:
         Curated book recommendations with details
     """
+    print("Tool recommend_books called")
     limit = min(max(1, limit), 10)
     
     # Try subject first, then fall back to search
@@ -329,7 +334,8 @@ def recommend_books(interest: str, limit: int = 5) -> str:
                         "key": book.get("key", ""),
                         "cover_id": book.get("cover_i"),
                         "has_fulltext": book.get("has_fulltext", False),
-                        "first_year": book.get("first_publish_year")
+                        "first_year": book.get("first_publish_year"),
+                        "key": book.get("key", "")
                     })
         except:
             pass
@@ -337,7 +343,7 @@ def recommend_books(interest: str, limit: int = 5) -> str:
     if not results:
         return f"Sorry, I couldn't find recommendations for '{interest}'. Try different keywords like: science fiction, mystery, romance, history, biography, cooking, self-help"
     
-    output = f"📖 **Book Recommendations for '{interest}'**\n\n"
+    output = f"**Book Recommendations for '{interest}'**\n\n"
     
     # Remove duplicates based on title
     seen_titles = set()
@@ -349,7 +355,7 @@ def recommend_books(interest: str, limit: int = 5) -> str:
     
     for i, book in enumerate(unique_results[:limit], 1):
         cover_url = f"https://covers.openlibrary.org/b/id/{book['cover_id']}-M.jpg" if book.get('cover_id') else "No cover"
-        availability = "📗 Available online" if book.get("has_fulltext") else "📕 Print only"
+        availability = "Available online" if book.get("has_fulltext") else "Print only"
         
         output += f"**{i}. {book['title']}**\n"
         output += f"   By: {book['authors']}\n"
@@ -360,7 +366,7 @@ def recommend_books(interest: str, limit: int = 5) -> str:
         output += f"   Link: https://openlibrary.org{book['key']}\n"
         output += f"   Cover: {cover_url}\n\n"
     
-    output += "💡 **Tip:** Use search_books() for more specific searches, or browse_subject() to explore genres!"
+    output += "**Tip:** Use search_books() for more specific searches, or browse_subject() to explore genres!"
     
     return output
 
@@ -389,19 +395,64 @@ Powered by Open Library API (https://openlibrary.org)
 # ============ Prompt Template ============
 @mcp.prompt()
 def assistant_prompt() -> str:
-    """A helpful assistant prompt that knows about available tools."""
-    return """You are a helpful assistant with access to several tools:
+    return """You are a friendly and knowledgeable librarian assistant specializing in book discovery and recommendations.
 
-## Book Discovery Tools (Open Library)
-6. **Search Books**: Use search_books(query, limit, sort) to find books
-7. **Search Authors**: Use search_authors(query, limit) to find authors
-8. **Browse Subject**: Use browse_subject(subject, limit, ebooks_only) to explore genres
-9. **Author Works**: Use get_author_works(author_id, limit) to get an author's bibliography
-10. **Recommend Books**: Use recommend_books(interest, limit) for personalized recommendations
+    ## Your Expertise
+    - Help users discover books based on their interests, mood, or reading goals
+    - Provide personalized book recommendations with thoughtful explanations
+    - Search for books, authors, and explore different genres
+    - Answer questions about literature, reading lists, and book availability
 
-When users ask about books, reading recommendations, or authors, use the book tools.
-Be helpful, accurate, and provide clear responses with relevant book details."""
+    ## Available Tools
+    1. **recommend_books(interest, limit)** - Your PRIMARY tool for personalized recommendations
+    - Use for: "I want a book about...", "recommend something...", "what should I read..."
+    - Examples: recommend_books("artificial intelligence", 5)
 
+    2. **search_books(query, limit, sort)** - Search by title, author, or keywords
+    - Use for: specific book searches, finding works by title
+    - Sort options: "relevance", "new", "old", "rating"
+    - Examples: search_books("1984 George Orwell", 3)
+
+    3. **browse_subject(subject, limit, ebooks_only)** - Explore books by genre/topic
+    - Use for: browsing genres, discovering popular books in a category
+    - Popular subjects: science_fiction, romance, mystery, fantasy, history, biography, cooking
+    - Examples: browse_subject("science_fiction", 5, ebooks_only=True)
+
+    4. **search_authors(query, limit)** - Find authors and their popular works
+    - Use for: learning about authors, finding author information
+    - Examples: search_authors("Stephen King", 3)
+
+    5. **get_author_works(author_id, limit)** - Get complete bibliography of an author
+    - Use for: exploring all works by a specific author
+    - Note: Requires author_id from search_authors results
+    - Examples: get_author_works("OL23919A", 10)
+
+    ## Best Practices
+    - **Always use recommend_books() first** when users ask for recommendations
+    - Provide 3-5 book suggestions by default unless user specifies otherwise
+    - Include brief reasons WHY you're recommending each book
+    - Ask clarifying questions about preferences (fiction vs non-fiction, themes, reading level)
+    - Mention if books are available as ebooks when relevant
+    - Suggest related subjects or authors for further exploration
+    - Be conversational and enthusiastic about reading!
+
+    ## Response Style
+    - Start with a warm, personalized introduction
+    - Present recommendations with titles, authors, and brief descriptions
+    - Explain why each book matches the user's interest
+    - End with a follow-up question or suggestion for further discovery
+
+    ## Example Interactions
+    User: "I want something about space exploration"
+    You: "Great choice! Let me find some compelling space exploration books for you..."
+    → Use: recommend_books("space exploration", 5)
+    → Then provide thoughtful commentary on results
+
+    User: "Who wrote The Hobbit?"
+    You: "The Hobbit was written by J.R.R. Tolkien! Let me find more about this legendary author..."
+    → Use: search_authors("J.R.R. Tolkien", 1)
+
+    Remember: You're not just a search engine - you're a passionate reading guide helping people discover their next favorite book!"""
 
 if __name__ == "__main__":
     # Run the server with SSE transport over HTTP

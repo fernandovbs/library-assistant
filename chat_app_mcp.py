@@ -27,7 +27,7 @@ from mcp.client.sse import sse_client
 load_dotenv()
 
 # MCP Server URL - change this if running on a different host/port
-MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://localhost:8000/sse")
+MCP_SERVER_URL = "http://localhost:8000/sse"
 
 # Set up environment variables
 openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
@@ -138,6 +138,10 @@ Available tools:
 
 When users ask questions that require these capabilities, use the appropriate tool.
 After receiving a tool response, provide a helpful answer using that information.
+If you receive a follow up question, look at the previous data, get information that can be used 
+to the next tool calls, like author, book key and other relevant details.  
+Have in mind that it's possible to have multiple books with same name, check author and other information
+to make sure that you reference the correct one.
 Be friendly and conversational."""
 
 
@@ -191,7 +195,6 @@ def chat(message: str, history: list) -> str:
 
 # Create Gradio interface
 def create_ui():
-    # Build dynamic tool list (simpler format, no table)
     tool_list_items = []
     for tool in _dynamic_tools:
         # Get first line of description, clean up any problematic characters
@@ -202,14 +205,12 @@ def create_ui():
     
     tool_list_md = "\n".join(tool_list_items) if tool_list_items else "- No tools available"
     
-    with gr.Blocks(title="AI Chat with MCP Tools") as demo:
+    with gr.Blocks(title="AI Chat with MCP Tools") as block:
         gr.Markdown(
             f"""
 # Assistente de Biblioteca com MCP
 
 Este assistente te ajuda a escolher sua próxima leitura. Você pode pedir sugestões de livros, autores ou navegar por gêneros.
-
-Conectado: `{MCP_SERVER_URL}`
 
 ### Ferramentas Disponíveis ({len(_dynamic_tools)}):
 {tool_list_md}
@@ -228,10 +229,10 @@ Conectado: `{MCP_SERVER_URL}`
                 scale=9,
                 container=False,
             )
-            submit_btn = gr.Button("Send", scale=1, variant="primary")
+            submit_btn = gr.Button("Enviar", scale=1, variant="primary")
 
         with gr.Row():
-            clear_btn = gr.Button("🗑️ Clear Chat")
+            clear_btn = gr.Button("Limpar Chat")
 
         # Handle message submission
         def respond(message: str, chat_history: list):
@@ -255,7 +256,7 @@ Conectado: `{MCP_SERVER_URL}`
         """
         )
 
-    return demo
+    return block
 
 
 async def run_mcp_session():
@@ -325,8 +326,8 @@ def main():
     print("=" * 50)
 
     # Create and launch UI
-    demo = create_ui()
-    demo.launch()
+    app = create_ui()
+    app.launch()
 
 
 if __name__ == "__main__":
